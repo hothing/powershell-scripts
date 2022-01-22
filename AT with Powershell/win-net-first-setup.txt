@@ -1,0 +1,6 @@
+PS> netsh interface ipv4 set address "Local Area Connection" static 192.168.10.21  255.255.255.0
+
+PS> Add-Computer -WorkgroupName PLANT1
+WARNING: The changes will take effect after you restart the computer WC2.
+
+PS> Rename-Computer -NewName WC02 -Restart

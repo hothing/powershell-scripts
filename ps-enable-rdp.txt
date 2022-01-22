@@ -1,0 +1,5 @@
+sp -path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\' -name 'fDenyTSConnections' -value 0
+Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+For remote computer start with:
+Enter-PSSession -ComputerName hostname -Credential (Get-Credential)

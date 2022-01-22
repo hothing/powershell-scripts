@@ -1,0 +1,31 @@
+# Preparation
+
+Let's first get a look at the profile used by your network adapters:
+
+> Get-NetConnectionProfile
+
+Find the InterfaceIndex number of the adapter you wish to change then use command:
+
+> Set-NetConnectionProfile -InterfaceIndex <index number> -NetworkCategory Private
+
+# Enable a remote powershell
+
+> Enable-PsRemoting -SkipNetworkProfileCheck -Force
+
+The check firewall:
+
+> Get-NetFirewallRule -Name "WINRM-HTTP-In-TCP*"
+
+Unless:
+
+> Set-NetFirewallRule -Name "WINRM-HTTP-In-TCP-PUBLIC" -RemoteAddress Any
+
+[[https://devblogs.microsoft.com/scripting/enable-powershell-remoting-to-enable-running-commands/]] 
+
+To view the list of TrustedHosts added to the machine, type the following command. By default, its value is blank.
+
+> Get-Item WSMan:\localhost\Client\TrustedHosts
+
+Using the Set-Item cmdlet and the wildcard you can add all the computers to the TrustedHosts list with the following command.
+
+> Set-Item WSMan:\localhost\Client\TrustedHosts -Value *

@@ -1,0 +1,21 @@
+[192.168.10.10]: PS C:\Users\Administrator\Documents> $passwd1 = Read-Host -AsSecureString -Prompt ":>"
+[192.168.10.10]: PS C:\Users\Administrator\Documents> New-LocalUser -Description "HMI User" -AccountNeverExpires -FullName "HMI User" -Name hmiuser -Password $passwd1
+[192.168.10.10]: PS C:\Users\Administrator\Documents> New-LocalUser -Description "Automation engineer" -AccountNeverExpires -FullName "Engineer" -Name engineer -Password $passwd2 -PasswordNeverExpires -UserMayNotChangePassword
+
+Name     Enabled Description
+----     ------- -----------
+engineer True    Automation engineer
+
+[192.168.10.10]: PS C:\Users\Administrator\Documents> Exit-PSSession
+
+PS C:\Windows\system32> $passwd2 = ConvertTo-SecureString -String "cyQD7v6#!" -AsPlainText -Force
+PS C:\Windows\system32> Get-LocalUser -Name engineer
+
+Name     Enabled Description
+----     ------- -----------
+engineer True
+
+
+PS C:\Windows\system32> Get-LocalUser -Name engineer | Set-LocalUser -Description "Automation engineer" -Password $passw
+d2
+PS C:\Windows\system32>

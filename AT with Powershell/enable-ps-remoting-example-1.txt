@@ -1,0 +1,52 @@
+PS C:\Windows\system32> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose
+you to the security risks described in the about_Execution_Policies help topic at
+http://go.microsoft.com/fwlink/?LinkID=135170. Do you want to change the execution policy?
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): a
+
+PS C:\Windows\system32> netsh interface ipv4 set address "Local Area Connection" static 192.168.10.20  255.255.255.0
+
+PS C:\Windows\system32> cd $HOME
+PS C:\Users\engineer> . $HOME\Documents\win7-change-network-profile.ps1
+Adapter Unidentified network on category 0
+Category has been changed 0 -> 1
+PS C:\Users\engineer> winrm quickconfig
+WinRM is not set up to receive requests on this machine.
+The following changes must be made:
+
+Start the WinRM service.
+Set the WinRM service type to delayed auto start.
+
+Make these changes [y/n]? y
+
+WinRM has been updated to receive requests.
+
+WinRM service type changed successfully.
+WinRM service started.
+WinRM is not set up to allow remote access to this machine for management.
+The following changes must be made:
+
+Create a WinRM listener on HTTP://* to accept WS-Man requests to any IP on this machine.
+Enable the WinRM firewall exception.
+Configure LocalAccountTokenFilterPolicy to grant administrative rights remotely to local users.
+
+Make these changes [y/n]? y
+
+WinRM has been updated for remote management.
+
+Created a WinRM listener on HTTP://* to accept WS-Man requests to any IP on this machine.
+WinRM firewall exception enabled.
+Configured LocalAccountTokenFilterPolicy to grant administrative rights remotely to local users.
+PS C:\Users\engineer> si wsman:\localhost\Client\TrustedHosts -Value "*"
+
+WinRM Security Configuration.
+This command modifies the TrustedHosts list for the WinRM client. The computers in the TrustedHosts list might not be
+authenticated. The client might send credential information to these computers. Are you sure that you want to modify
+this list?
+[Y] Yes  [N] No  [S] Suspend  [?] Help (default is "Y"): y
+PS C:\Users\engineer> Enable-PSRemoting
+WinRM is already set up to receive requests on this computer.
+WinRM is already set up for remote management on this computer.
+PS C:\Users\engineer>

@@ -1,0 +1,49 @@
+PS C:\Users\Administrator> $credpc1 = Get-Credential
+
+cmdlet Get-Credential at command pipeline position 1
+Supply values for the following parameters:
+Credential
+
+Invoke-Command -computername DESKTOP-PEGFF7U -scriptblock { ls c:\ } -Credential (Get-Credential)
+
+cmdlet Get-Credential at command pipeline position 1
+Supply values for the following parameters:
+Credential
+
+
+    Directory: C:\
+
+
+Mode                LastWriteTime         Length Name                                                     PSComputerName
+----                -------------         ------ ----                                                     --------------
+d-----        3/18/2019   9:52 PM                PerfLogs                                                 DESKTOP-PEGFF7U
+d-r---        5/16/2021  11:32 PM                Program Files                                            DESKTOP-PEGFF7U
+d-r---        3/18/2019  11:22 PM                Program Files (x86)                                      DESKTOP-PEGFF7U
+d-r---        5/16/2021  11:32 PM                Users                                                    DESKTOP-PEGFF7U
+d-----        5/16/2021  11:23 PM                Windows                                                  DESKTOP-PEGFF7U
+
+PS C:\Users\Administrator> Invoke-Command -computername DESKTOP-PEGFF7U -scriptblock { md c:\Temp } -Credential $credpc1
+
+
+    Directory: C:\
+
+
+Mode                LastWriteTime         Length Name                                                     PSComputerName
+----                -------------         ------ ----                                                     --------------
+d-----        5/17/2021   2:13 AM                Temp                                                     DESKTOP-PEGFF7U
+
+PS C:\Users\Administrator> Invoke-Command -computername DESKTOP-PEGFF7U -scriptblock { ls c:\ } -Credential $credpc1
+
+
+    Directory: C:\
+
+
+Mode                LastWriteTime         Length Name                                                     PSComputerName
+----                -------------         ------ ----                                                     --------------
+d-----        3/18/2019   9:52 PM                PerfLogs                                                 DESKTOP-PEGFF7U
+d-r---        5/16/2021  11:32 PM                Program Files                                            DESKTOP-PEGFF7U
+d-r---        3/18/2019  11:22 PM                Program Files (x86)                                      DESKTOP-PEGFF7U
+d-----        5/17/2021   2:13 AM                Temp                                                     DESKTOP-PEGFF7U
+d-r---        5/16/2021  11:32 PM                Users                                                    DESKTOP-PEGFF7U
+d-----        5/16/2021  11:23 PM                Windows                                                  DESKTOP-PEGFF7U
+

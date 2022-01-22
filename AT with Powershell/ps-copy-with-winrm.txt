@@ -1,0 +1,1 @@
+Copy-Item –Path C:\Folder1\file1.txt –Destination 'C:\' –ToSession $session

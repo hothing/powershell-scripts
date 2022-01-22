@@ -1,0 +1,20 @@
+string tagName = "TestSHARP"; //имя тега
+string tagValue = "123.4"; //значение тега
+              
+System.Type objectType = System.Type.GetTypeFromProgID("WinCC-Runtime-Project");
+              
+object obj = System.Activator.CreateInstance(objectType);
+
+//меняем тег
+objectType.InvokeMember("SetValue", 
+                        System.Reflection.BindingFlags.InvokeMethod, 
+                        null, 
+                        obj, 
+                        new object[] { tagName, tagValue });
+
+//читаем тег  
+object val = objectType.InvokeMember("GetValue", 
+                                     System.Reflection.BindingFlags.InvokeMethod, 
+                                     null, 
+                                     obj, 
+                                     new object[] { tagName });

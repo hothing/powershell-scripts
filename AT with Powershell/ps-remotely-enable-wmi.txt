@@ -1,0 +1,23 @@
+[192.168.10.10]: PS C:\Users\Administrator\Documents> Enable-NetFirewallRule -Name WMI-RPCSS-In-TCP
+
+[192.168.10.10]: PS C:\Users\Administrator\Documents> Get-NetFirewallRule | select-object Name, Enabled | where-object Name -match "WMI*"
+
+Name                Enabled
+----                -------
+WMI-RPCSS-In-TCP       True
+WMI-WINMGMT-In-TCP    False
+WMI-WINMGMT-Out-TCP   False
+WMI-ASYNC-In-TCP      False
+
+
+[192.168.10.10]: PS C:\Users\Administrator\Documents> Get-NetFirewallRule | select-object Name, Enabled | where-object Name -match "WMI*" | % { Enable-NetFirewallRule $_.Name }
+
+[192.168.10.10]: PS C:\Users\Administrator\Documents> Get-NetFirewallRule | select-object Name, Enabled | where-object Name -match "WMI*"
+
+Name                Enabled
+----                -------
+WMI-RPCSS-In-TCP       True
+WMI-WINMGMT-In-TCP     True
+WMI-WINMGMT-Out-TCP    True
+WMI-ASYNC-In-TCP       True
+

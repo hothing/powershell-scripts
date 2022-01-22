@@ -1,0 +1,43 @@
+$Parms = @{
+ Path = "C:\Test\New-Data.ps1"
+ Verbose = $True
+ Version = "1.0"
+ Author = "pattif@contoso.com"
+ Description = "My new script file test"
+ CompanyName = "Contoso Corporation"
+ Copyright = "2019 Contoso Corporation. All rights reserved."
+ ExternalModuleDependencies = "ff","bb"
+ RequiredScripts = "Start-WFContosoServer", "Stop-ContosoServerScript"
+ ExternalScriptDependencies = "Stop-ContosoServerScript"
+ Tags = @("Tag1", "Tag2", "Tag3")
+ ProjectUri = "https://contoso.com"
+ LicenseUri = "https://contoso.com/License"
+ IconUri = "https://contoso.com/Icon"
+ PassThru = $True
+ ReleaseNotes = @("Contoso script now supports the following features:",
+   "Feature 1",
+   "Feature 2",
+   "Feature 3",
+   "Feature 4",
+   "Feature 5")
+ RequiredModules =
+   "1",
+   "2",
+   "RequiredModule1",
+   @{ModuleName="RequiredModule2";ModuleVersion="1.0"},
+   @{ModuleName="RequiredModule3";RequiredVersion="2.0"},
+   "ExternalModule1"
+ }
+New-ScriptFileInfo @Parms
+
+########
+
+Test-ScriptFileInfo -Path $Parms.Path
+
+Version    Name                 Author                   Description
+-------    ----                 ------                   -----------
+1.0        New-Data             pattif@contoso.com       My new script file test
+
+Publish-Script -Path $Params.Path -Repository LocalRepo1
+Find-Script -Repository LocalRepo1 -Name "New-Data"
+

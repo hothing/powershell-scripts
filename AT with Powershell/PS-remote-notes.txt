@@ -1,0 +1,147 @@
+PS C:\Windows\system32> .\sc.exe start winrm
+PS C:\Windows\system32> winrm qc
+PS C:\Windows\system32> gi wsman:\localhost\Client\TrustedHosts
+
+
+   WSManConfig: Microsoft.WSMan.Management\WSMan::localhost\Client
+
+Type            Name                           SourceOfValue   Value
+----            ----                           -------------   -----
+System.String   TrustedHosts
+
+
+PS C:\Windows\system32> si wsman:\localhost\Client\TrustedHosts -Value "*"
+
+/// Connect ro remote server
+PS C:\Windows\system32> $cd = Get-Credential -UserName Administrator -Message " "
+PS C:\Windows\system32> Enter-PSSession -ComputerName 192.168.10.10 -Credential $cd
+
+/// Command via PSRemote
+
+[server]PS> .\sc.exe start rpcss
+[server]PS> .\sc.exe start mpssvc
+
+[server]PS> Add-Computer -WorkgroupName PLANT1
+[server]PS> Get-NetAdapter
+
+Name                      InterfaceDescription                    ifIndex Status       MacAddress             LinkSpeed
+----                      --------------------                    ------- ------       ----------             ---------
+Ethernet 2                Intel(R) PRO/1000 MT Desktop Adapter #2      13 Up           08-00-27-24-53-DD         1 Gbps
+Ethernet                  Intel(R) PRO/1000 MT Desktop Adapter         12 Up           08-00-27-81-E1-61         1 Gbps
+
+[server]PS> $eth1 = Get-NetAdapter -InterfaceIndex 13
+[server]PS> $eth1 | Set-NetIPInterface -AddressFamily IPv4 -Dhcp Disabled
+[server]PS> $eth1 | Set-NetIPInterface -AddressFamily IPv6 -Dhcp Disabled
+[server]PS> $eth1 | New-NetIPAddress -IPAddress 192.168.10.10 -PrefixLength 24
+
+
+IPAddress         : 192.168.10.10
+InterfaceIndex    : 13
+InterfaceAlias    : Ethernet 2
+AddressFamily     : IPv4
+Type              : Unicast
+PrefixLength      : 24
+PrefixOrigin      : Manual
+SuffixOrigin      : Manual
+AddressState      : Tentative
+ValidLifetime     : Infinite ([TimeSpan]::MaxValue)
+PreferredLifetime : Infinite ([TimeSpan]::MaxValue)
+SkipAsSource      : False
+PolicyStore       : ActiveStore
+
+IPAddress         : 192.168.10.10
+InterfaceIndex    : 13
+InterfaceAlias    : Ethernet 2
+AddressFamily     : IPv4
+Type              : Unicast
+PrefixLength      : 24
+PrefixOrigin      : Manual
+SuffixOrigin      : Manual
+AddressState      : Invalid
+ValidLifetime     : Infinite ([TimeSpan]::MaxValue)
+PreferredLifetime : Infinite ([TimeSpan]::MaxValue)
+SkipAsSource      : False
+PolicyStore       : PersistentStore
+
+[server]PS> Rename-Computer -NewName WS01 -Force -Restart
+
+// On control station
+PS> netsh interface ipv4 set address "Local Area Connection" static 192.168.10.20  255.255.255.0
+
+////
+
+
+PS C:\Users\Administrator> Get-NetConnectionProfile
+
+
+Name             : Network
+InterfaceAlias   : Ethernet
+InterfaceIndex   : 12
+NetworkCategory  : Private
+IPv4Connectivity : Internet
+IPv6Connectivity : NoTraffic
+
+Name             : Unidentified network
+InterfaceAlias   : Ethernet 2
+InterfaceIndex   : 13
+NetworkCategory  : Public
+IPv4Connectivity : LocalNetwork
+IPv6Connectivity : LocalNetwork
+
+
+
+PS C:\Users\Administrator> Set-NetConnectionProfile -InterfaceIndex 13 -NetworkCategory Private
+PS C:\Users\Administrator> Get-NetConnectionProfile
+
+
+Name             : Network
+InterfaceAlias   : Ethernet
+InterfaceIndex   : 12
+NetworkCategory  : Private
+IPv4Connectivity : Internet
+IPv6Connectivity : NoTraffic
+
+Name             : Unidentified network
+InterfaceAlias   : Ethernet 2
+InterfaceIndex   : 13
+NetworkCategory  : Private
+IPv4Connectivity : LocalNetwork
+IPv6Connectivity : LocalNetwork
+
+// on control station
+[server]PS> Invoke-Command -ComputerName WS01 -Credential (Get-Credential) -ScriptBlock { Get-NetConnectionProfile }
+cmdlet Get-Credential at command pipeline position 1
+Supply values for the following parameters:
+
+
+PSComputerName   : WS01
+RunspaceId       : f56d884f-25a6-4e84-94a2-ed94eceea355
+Caption          : 
+Description      : 
+ElementName      : 
+InstanceID       : {94DF4466-EBA8-47C1-8ED6-77D6141D0409}
+InterfaceAlias   : Ethernet
+InterfaceIndex   : 12
+IPv4Connectivity : 4
+IPv6Connectivity : 1
+Name             : Network
+NetworkCategory  : 1
+
+PSComputerName   : WS01
+RunspaceId       : f56d884f-25a6-4e84-94a2-ed94eceea355
+Caption          : 
+Description      : 
+ElementName      : 
+InstanceID       : {8ABC51F0-A35D-4F43-A6AC-21A0BA0B3F7B}
+InterfaceAlias   : Ethernet 2
+InterfaceIndex   : 13
+IPv4Connectivity : 3
+IPv6Connectivity : 3
+Name             : Unidentified network
+NetworkCategory  : 1
+
+[server]PS> Invoke-Command -ComputerName WS01 -Credential (Get-Credential) -ScriptBlock { Set-NetConnectionProfile -InterfaceIndex 13 -NetworkCategory Private }
+
+----
+PS C:\Users\engineer> si wsman:\localhost\Client\TrustedHosts *
+si : Access is denied. You need to run this cmdlet from an elevated process.

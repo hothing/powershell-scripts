@@ -1,0 +1,42 @@
+HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles
+
+PS HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles> ls
+
+
+    Hive: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles
+
+
+Name                           Property
+----                           --------
+{A07852F6-62D3-4C9C-986B-03C7D ProfileName       : Network
+99568C7}                       Description       : Network
+                               Managed           : 0
+                               Category          : 1
+                               DateCreated       : {229, 7, 4, 0...}
+                               NameType          : 6
+                               DateLastConnected : {230, 7, 1, 0...}
+                               CategoryType      : 0
+                               IconType          : 0
+
+============================
+
+$NLMType = [Type]::GetTypeFromCLSID('DCB00C01-570F-4A9B-8D69-199FDBA5723B')
+$INetworkListManager = [Activator]::CreateInstance($NLMType)
+
+$NLM_ENUM_NETWORK_CONNECTED  = 1
+$NLM_NETWORK_CATEGORY_PUBLIC = 0x00
+$NLM_NETWORK_CATEGORY_PRIVATE = 0x01
+$UNIDENTIFIED = "Unidentified network"
+
+$INetworks = $INetworkListManager.GetNetworks($NLM_ENUM_NETWORK_CONNECTED)
+
+foreach ($INetwork in $INetworks)
+{
+    $Name = $INetwork.GetName()
+    $Category = $INetwork.GetCategory()
+
+    if ($INetwork.IsConnected -and ($Category -eq $NLM_NETWORK_CATEGORY_PUBLIC) -and ($Name -eq $UNIDENTIFIED))
+    {
+        $INetwork.SetCategory($NLM_NETWORK_CATEGORY_PRIVATE)
+    }
+}

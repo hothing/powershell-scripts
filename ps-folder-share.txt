@@ -1,0 +1,7 @@
+New-Item -Type  Directory -Name "temp2" -path "c:\"
+New-SmbShare -Name share -Path "c:\temp" -ReadAccess "Everyone"
+
+$fldAcl = Get-Acl "c:\temp2"
+$ace = New-Object System.Security.AccessControl.FileSystemAccessRule ("Everyone", "ReadAndExecute", "Allow")
+$fldAcl.SetAccessRule($ace)
+$fldAcl | Set-Acl "c:\temp2"
