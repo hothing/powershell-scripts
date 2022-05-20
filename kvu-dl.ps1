@@ -60,19 +60,14 @@ At the end of the download, it will create one file 'Author - Title'.mp3 with th
 param (
     [Parameter(Mandatory = $true,
             HelpMessage = 'Enter full URI of "Kniga V Uhe" site',
-            Position = 0)][String]$uri = "https://knigavuhe.org/book/unknown/",
+            Position = 0)][String]$Uri = "https://knigavuhe.org/book/unknown/",
     [Parameter(HelpMessage = 'Keep the original file name',
             Position = 1)][switch]$KeepFilename = $false, 
-    [Parameter(HelpMessage = 'Keep the original files',
-            Position = 1)][switch]$KeepInputFiles = $false, 
-    [Parameter(HelpMessage = 'Concat all parts to one file',
-            Position = 2)][switch]$WithOneFile = $false 
+    [Parameter(HelpMessage = 'Continue downloading after restart',
+            Position = 2)][switch]$DlContinue = $false, 
+    [Parameter(HelpMessage = 'Merge all parts to one file',
+            Position = 3)][switch]$Merge = $false
 )
-
-# TODO Make a request via GUI when the script has been started from Windows Explorer 
-#If ($PSBoundParameters.Count -lt 1) {
-#	$uri = Read-Host -Prompt 'Input a URL for a book on the "Kniga v uhe" site'
-#}
 
 If (-not (Get-Module -ErrorAction Ignore -ListAvailable PowerHTML)) {
   Write-Verbose "Installing PowerHTML module for the current user..."
@@ -80,13 +75,56 @@ If (-not (Get-Module -ErrorAction Ignore -ListAvailable PowerHTML)) {
 }
 Import-Module -ErrorAction Stop PowerHTML
 
+# Try to use TagLib-Sharp library for the media file tagging
+
+$pkgTagLib = Get-Package TaglibSharp -ErrorAction Ignore
+
+$canUseTaglib = $null -ne $pkgTagLib
+
+if ($canUseTaglib) {
+    Add-Type -Path ((Split-Path $pkgTagLib.Source) + "/lib/netstandard2.0/TagLibSharp.dll")
+} else {
+    Install-Package TagLibSharp -Scope CurrentUser
+    $pkgTagLib = Get-Package TaglibSharp -ErrorAction Ignore
+    $canUseTaglib = $null -ne $pkgTagLib
+    if ($canUseTaglib) {
+        Add-Type -Path ((Split-Path $pkgTagLib.Source) + "/lib/netstandard2.0/TagLibSharp.dll")
+    }
+}
+
+function Set-Mp3Tags ($mediaFile, $Author, $Title, $Performers, $Genre)
+{
+	# Invoke TagLibSharp library to set MP3 metadata tags
+    # WARNING! $mediaFile must be an _absolute_ file name
+    try {        
+        $Tags = [TagLib.File]::Create($mediaFile)
+
+        $Tags.Tag.AlbumArtists = $Author
+        $Tags.Tag.Performers   = $Performers
+        $Tags.Tag.Title = $Title
+        $Tags.Tag.Genres = $Genre
+        
+        # Commit the MP3 metadata tag changes to the file
+        $Tags.Save()
+    } catch {
+        Write-Host -ForegroundColor DarkYellow "Error setting MP3 tags for file [$($mediaFile)]"
+        continue
+    }
+}
+
+#######################################
+## Download and pase a book document ##
+#######################################
+
 try {
-	$wp = Invoke-WebRequest -Uri $uri
+	$wp = Invoke-WebRequest -Uri $Uri
     $doc = ConvertFrom-Html -Content $wp.Content
 } catch {
 	Write-Host "$uri is not reachable"
 	Exit
 }
+
+
 
 # Get the title of book
 try {
@@ -95,8 +133,6 @@ try {
 } catch {
     $tc = "Unknown book"
 }
-
-Write-Information "Book title : $tc"
 
 # Get the Author
 try {
@@ -114,25 +150,69 @@ try {
     $author = "Unknown Author"
 }
 
-Write-Information "Book author : $author"
+# Get a reader/performer
+try {
+    # /html/body/div[6]/div/div/div[2]/div[1]/div[2]/h1/span[3]/span[2]/a[1]
+    # /html/body/div[6]/div/div/div[2]/div[1]/div[2]/h1/span[3]/a
+    $perfBlock = $doc.SelectNodes("/html/body/div[6]/div/div/div[2]/div[1]/div[2]/h1/span[3]")  
+} catch {
+    
+}
+# try a variant A
+$performer = $perfBlock.SelectNodes("a")
+if ($null -ne $performer) {
+    $performer = $performer.InnerHtml    
+} else {
+    # try a variant B
+    $performer = $perfBlock.SelectNodes("span[2]/a[1]")
+    if ($null -ne $performer) {
+        $performer = $performer.InnerHtml    
+    } else {
+        $performer = "---"
+    }
+}
+$performer = $performer.Trim()
 
-# Extract a list of mp3 files
+# Get another reader #1 => /html/body/div[6]/div/div/div[2]/div[2]/div[2]/div[1]/div[2]
+#div.book_blue_block:nth-child(1)
+#div.book_serie_block_item:nth-child(2)
+#try {
+#    $i = 1
+#    $book_reader = @()    
+#    #$book_reader += $doc.SelectNodes("/html/body/div[6]/div/div/div[2]/div[2]/div[2]/div[1]/div[2]")
+#} catch {
+#
+#}
+
+
+# Extract a genre
+try {
+    $genre = $doc.SelectNodes("/html/body/div[6]/div/div/div[2]/div[1]/div[1]/a").InnerHtml
+} catch {
+    $genre = ""
+}
+
+Write-Host "== Book summary =="
+Write-Host "Book title : $tc"
+Write-Host "Book author : $author"
+Write-Host "Audio performer : $performer"
+Write-Host "Book genre : $genre"
+Write-Host "=================="
+
+##################################
+## Extract a list of mp3 files  ##
+##################################
 
 $script = $doc.SelectNodes("/html/body/script[1]")
 
 $content = @()
-if($script -ne $null)
+if($null -ne $script)
 {
-   $script.InnerText -split "\n" | Select-String -Pattern "BookPlayer\(" | foreach { $_ -match "BookPlayer\((\d+), (\[.*?\]),"; $content = ConvertFrom-Json $Matches[2] }
+   $script.InnerText -split "\n" | Select-String -Pattern "BookPlayer\(" | ForEach-Object { $_ -match "BookPlayer\((\d+), (\[.*?\]),"; $content = ConvertFrom-Json $Matches[2] }
    Write-Verbose "List of files: $content"
 }
 
 $bookid = "{0} - {1}" -f ($author, $tc)
-$out = "{0}.mp3" -f $bookid
-
-if (! (Test-Path $out -IsValid)) {
-    $out = "kniga-v-uhe-book.mp3"
-}
 
 if (!(Test-Path $bookid)) {
     if ((Get-Item -Path ".").BaseName -ne $bookid) {
@@ -143,28 +223,43 @@ if (!(Test-Path $bookid)) {
     Push-Location -Path $bookid
 }
 
+# Extract a book cover(image)
+# /html/body/div[6]/div/div/div[2]/div[2]/div[1]/div[1]/img
+try {
+    $coverNode = $doc.SelectNodes("/html/body/div[6]/div/div/div[2]/div[2]/div[1]/div[1]/img")
+    $coverUrl = $coverNode.GetAttributeValue("src","")
+    $cu = [uri]$coverUrl
+    $picExt = Split-Path $cu.LocalPath -Extension
+    $r = Invoke-WebRequest -Uri $coverUrl -OutFile ("book-cover{0}" -f $picExt)
+} catch {
+    $coverUrl = ""
+}
+
 $i = 1
 $fileList = @()
-$content | foreach {
-    $uri = "{0}?f=1" -f $_.url
+$content | ForEach-Object {
+    $muri = "{0}?f=1" -f $_.url
     if ($KeepFilename -and -not $WithOneFile) {
-        $uri = $_.url
-        $fn = $uri.Substring($uri.LastIndexOf("/") + 1)
+        $muri = $_.url
+        $fn = $muri.Substring($muri.LastIndexOf("/") + 1)
     } else {
         $fn = "{0:d3}.mp3" -f $i
     }
-    try {
-        Write-Host "Download a file $uri"
-	    $r = Invoke-WebRequest -Uri "$uri" -OutFile "$fn"
-        Write-Host "Done $fn"
-        $fileList += $fn
-        $i++
-    } catch {
-    }
+    if ($DlContinue -and (Test-Path $fn)) {
+        Write-Host "Audio file already exists"
+    } else{
+        try {
+            Write-Host "Download a file $muri"
+            $r = Invoke-WebRequest -Uri "$muri" -OutFile "$fn"
+            Write-Host "Done $fn"
+            $fileList += $fn
+            $i++
+        } catch {
+        }
+    }    
 }
 
-
-if ($WithOneFile) {
+if ($Merge) {
     $solidName = $out -replace '[^\w]+', '-'
     $outFileName = "$solidName.mp3"
 	$tempFileName = "{0}/{1}.mp3" -f ($env:TMP, $solidName)
@@ -173,6 +268,28 @@ if ($WithOneFile) {
     cvlc ( $fileList | sort ) $argOut "vlc://quit"
     Write-Host "Save to $outFileName"
     Rename-Item $tempFileName $outFileName
+    if ($canUseTaglib) { Set-Mp3Tags (Resolve-Path $outFileName) $author $tc $performer $genre }
+} else { 
+    if ($canUseTaglib) {
+        Write-Host "Media file(s) tags updating"
+        $fileList | ForEach-Object {
+            $fullName = Resolve-Path $_ # FIXME: must convert to absolute file name 
+            Set-Mp3Tags $fullName $author $tc $performer $genre
+        }
+    }
 }
+
+$description = @"
+Url : {1}
+== Book summary ====
+Book title      : {2}
+Book author     : {3}
+Audio performer : {4}
+Book genre      : {5}
+=====================
+{0}
+
+"@ -f (Get-Date), $Uri, $tc, $author, $performer, $genre 
+Set-Content -Path .\descript.ion -Value $description
 
 Pop-Location
